@@ -24,6 +24,9 @@ val AID_THAI_APPLET = "08 A000000054480001".toByteArray()
 
 val CMD_SELECT      = "00A40400".toByteArray()
 
+/**
+ * Thailand card applet specific APDUs
+ */
 val GET_RESPONSE1   = "00C00001".toByteArray()
 val GET_RESPONSE0   = "00C00000".toByteArray()
 
