@@ -4,25 +4,64 @@ import javax.smartcardio.*
 fun ByteArray.toHexString() = joinToString("") { "%02X".format(it) }
 
 fun String.toByteArray(): ByteArray {
-    val buf = ByteArray(length / 2)
+    val s = replace("\\s".toRegex(), "")
+    val buf = ByteArray(s.length / 2)
     var i = 0
     var j = 0
-    while (i < length && j < buf.size) {
-        buf[j] = substring(i, i + 2).toInt(16).toByte()
+    while (i < s.length && j < buf.size) {
+        buf[j] = s.substring(i, i + 2).toInt(16).toByte()
         i += 2
         j++
     }
     return buf
 }
 
-val SELECT = "00A40400".toByteArray()
-val THAI_APPLET = "08A000000054480001".toByteArray()
-val TEST_APPLET = "07DEC0DE00000101".toByteArray()
-
 lateinit var channel: CardChannel
+lateinit var GET_RESPONSE: ByteArray
 
-fun main(args: Array<String>) {
+val AID_TEST_APPLET = "07 DEC0DE00000101".toByteArray() // my Java Card test applet
+val AID_THAI_APPLET = "08 A000000054480001".toByteArray()
+
+val CMD_SELECT      = "00A40400".toByteArray()
+
+val GET_RESPONSE1   = "00C00001".toByteArray()
+val GET_RESPONSE0   = "00C00000".toByteArray()
+
+val CMD_CID         = "80B00004 02 000D".toByteArray()
+val CMD_THFULLNAME  = "80B00011 02 0064".toByteArray()
+val CMD_ENFULLNAME  = "80B00075 02 0064".toByteArray()
+val CMD_BIRTH       = "80B000D9 02 0008".toByteArray()
+val CMD_GENDER      = "80B000E1 02 0001".toByteArray()
+val CMD_ISSUER      = "80B000F6 02 0064".toByteArray()
+val CMD_ISSUE       = "80B00167 02 0008".toByteArray()
+val CMD_EXPIRE      = "80B0016F 02 0008".toByteArray()
+val CMD_ADDRESS     = "80B01579 02 0064".toByteArray()
+
+val CMD_PHOTO1      = "80B0017B 02 00FF".toByteArray()
+val CMD_PHOTO2      = "80B0027A 02 00FF".toByteArray()
+val CMD_PHOTO3      = "80B00379 02 00FF".toByteArray()
+val CMD_PHOTO4      = "80B00478 02 00FF".toByteArray()
+val CMD_PHOTO5      = "80B00577 02 00FF".toByteArray()
+val CMD_PHOTO6      = "80B00676 02 00FF".toByteArray()
+val CMD_PHOTO7      = "80B00775 02 00FF".toByteArray()
+val CMD_PHOTO8      = "80B00874 02 00FF".toByteArray()
+val CMD_PHOTO9      = "80B00973 02 00FF".toByteArray()
+val CMD_PHOTO10     = "80B00A72 02 00FF".toByteArray()
+val CMD_PHOTO11     = "80B00B71 02 00FF".toByteArray()
+val CMD_PHOTO12     = "80B00C70 02 00FF".toByteArray()
+val CMD_PHOTO13     = "80B00D6F 02 00FF".toByteArray()
+val CMD_PHOTO14     = "80B00E6E 02 00FF".toByteArray()
+val CMD_PHOTO15     = "80B00F6D 02 00FF".toByteArray()
+val CMD_PHOTO16     = "80B0106C 02 00FF".toByteArray()
+val CMD_PHOTO17     = "80B0116B 02 00FF".toByteArray()
+val CMD_PHOTO18     = "80B0126A 02 00FF".toByteArray()
+val CMD_PHOTO19     = "80B01369 02 00FF".toByteArray()
+val CMD_PHOTO20     = "80B01468 02 00FF".toByteArray()
+
+fun main(args: Array<String>)
+{
     val tf = TerminalFactory.getDefault()
+
     try {
         val terminals = tf.terminals().list()
         if (terminals.size == 0) {
@@ -54,13 +93,26 @@ fun main(args: Array<String>) {
         channel = card.basicChannel
 
         val atr = card.atr
-        val atrbuf1 = atr.bytes
-        val atrbuf2 = atr.historicalBytes
+        val atrBytes = atr.bytes
 
-        println("atrbuf1: ${atrbuf1.toHexString()}")
-        println("atrbuf2: ${atrbuf2.toHexString()}")
+        println("atrBytes: ${atrBytes.toHexString()}")
 
-        testselectThaiCard()
+        if (atrBytes[0] == 0x3B.toByte() && atrBytes[1] == 0x67.toByte()) {
+            GET_RESPONSE = GET_RESPONSE1
+        } else {
+            GET_RESPONSE = GET_RESPONSE0
+        }
+
+        testSelectApplet(AID_THAI_APPLET)
+        testReadThaiCardContent(CMD_CID)
+        testReadThaiCardContent(CMD_ENFULLNAME)
+        testReadThaiCardContent(CMD_THFULLNAME)
+        testReadThaiCardContent(CMD_BIRTH)
+        testReadThaiCardContent(CMD_GENDER)
+        testReadThaiCardContent(CMD_ISSUER)
+        testReadThaiCardContent(CMD_ISSUE)
+        testReadThaiCardContent(CMD_EXPIRE)
+        testReadThaiCardContent(CMD_ADDRESS)
 
         card.disconnect(true)
 
@@ -69,28 +121,38 @@ fun main(args: Array<String>) {
     }
 }
 
-fun testselectThaiCard() {
-    val cmd = CommandAPDU(SELECT + THAI_APPLET)
+fun testReadThaiCardContent(cmd: ByteArray) {
+    println("cmd: ${cmd.toHexString()}")
+    val resp1 = channel.transmit(CommandAPDU(CMD_ENFULLNAME))
+    val resp2 = channel.transmit(CommandAPDU(GET_RESPONSE + CMD_ENFULLNAME.last()))
+    println("resp1: ${resp1.bytes.toHexString()}")
+    println("resp2: ${resp2.bytes.toHexString()}")
+    println("------------------oOo-------------------")
+}
+
+fun testSelectApplet(aid: ByteArray) {
+    println("Selecting aid: ${aid.toHexString()}")
+    val cmd = CommandAPDU(CMD_SELECT + aid)
     val resp = channel.transmit(cmd)
     val sw = "0x%X".format(resp.sw)
     println("sw = ${sw}")
 }
 
-fun testselectTestApplet() {
-    val cmd = CommandAPDU(SELECT + TEST_APPLET)
-    val resp = channel.transmit(cmd)
-    val sw = "0x%X".format(resp.sw)
-    println("sw = ${sw}")
-}
+/**
+ * AID_TEST_APPLET is default-selected
+ */
+fun testJavaCardApplet() {
+    val payload = "04 FACEBABE".toByteArray()
+    val echoCmd = CommandAPDU(0x00, 0xEC, 0x00, 0x00, payload) // echo INStruction
+    val resp1 = channel.transmit(echoCmd)
 
-fun testcommand() {
+    println("resp1: ${resp1.bytes.toHexString()}")
 
-    val payload1 = "04FACEBABE".toByteArray()
-    val cmd1 = CommandAPDU(0x00, 0xEC, 0x00, 0x00, payload1)
-    val resp1 = channel.transmit(cmd1)
-
-    val cmd2 = CommandAPDU(0x00, 0x2D, 0x00, 0x00)
-    val resp2 = channel.transmit(cmd2)
+    val readCmd = CommandAPDU(0x00, 0x2D, 0x00, 0x00) // read INStruction
+    val resp2 = channel.transmit(readCmd)
     val data = resp2.data
     val buf = resp2.bytes
+
+    println("data: ${data.toHexString()}")
+    println("buf: ${buf.toHexString()}")
 }
