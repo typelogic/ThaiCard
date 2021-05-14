@@ -106,16 +106,21 @@ fun main(args: Array<String>)
             GET_RESPONSE = GET_RESPONSE0
         }
 
-        testSelectApplet(AID_THAI_APPLET)
-        testReadThaiCardContent(CMD_CID)
-        testReadThaiCardContent(CMD_ENFULLNAME)
-        testReadThaiCardContent(CMD_THFULLNAME)
-        testReadThaiCardContent(CMD_BIRTH)
-        testReadThaiCardContent(CMD_GENDER)
-        testReadThaiCardContent(CMD_ISSUER)
-        testReadThaiCardContent(CMD_ISSUE)
-        testReadThaiCardContent(CMD_EXPIRE)
-        testReadThaiCardContent(CMD_ADDRESS)
+        var commands = mutableListOf<ByteArray>(
+            CMD_CID,
+            CMD_ENFULLNAME,
+            CMD_THFULLNAME,
+            CMD_BIRTH,
+            CMD_GENDER,
+            CMD_ISSUER,
+            CMD_ISSUE,
+            CMD_EXPIRE,
+            CMD_ADDRESS
+        )
+
+        commands.forEach {
+            testCommand(it)
+        }
 
         card.disconnect(true)
 
@@ -124,13 +129,23 @@ fun main(args: Array<String>)
     }
 }
 
+fun testCommand(cmd: ByteArray) {
+    testSelectApplet(AID_THAI_APPLET)
+    testReadThaiCardContent(cmd)
+}
+
 fun testReadThaiCardContent(cmd: ByteArray) {
-    println("cmd: ${cmd.toHexString()}")
-    val resp1 = channel.transmit(CommandAPDU(CMD_ENFULLNAME))
-    val resp2 = channel.transmit(CommandAPDU(GET_RESPONSE + CMD_ENFULLNAME.last()))
-    println("resp1: ${resp1.bytes.toHexString()}")
-    println("resp2: ${resp2.bytes.toHexString()}")
-    println("------------------oOo-------------------")
+    try {
+        println("cmd: ${cmd.toHexString()}")
+        val resp1 = channel.transmit(CommandAPDU(cmd))
+        println("resp1: ${resp1.bytes.toHexString()}")
+        //val resp2 = channel.transmit(CommandAPDU(GET_RESPONSE + cmd.last()))
+        //println("resp2: ${resp2.bytes.toHexString()}")
+
+        println("------------------oOo-------------------")
+    } catch (e: Exception) {
+        println("Exception: ${e.message}")
+    }
 }
 
 fun testSelectApplet(aid: ByteArray) {
