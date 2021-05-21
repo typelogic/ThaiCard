@@ -63,8 +63,18 @@ val CMD_PHOTO18     = "80B0126A 02 00FF".toByteArray()
 val CMD_PHOTO19     = "80B01369 02 00FF".toByteArray()
 val CMD_PHOTO20     = "80B01468 02 00FF".toByteArray()
 
+val CMD_FPRINTP     = "80B0340076".toByteArray()
+val CMD_CARDADM     = "80000000".toByteArray()
+
+val CMD_BLOCK1_1    = "80B00000 0200FF".toByteArray()
+val CMD_BLOCK1_2    = "80B000FF 02007A".toByteArray()
+val CMD_BLOCK2      = "80B01579 0200AE".toByteArray()
+
+val CMD_CARDID      = "80CA9F7F".toByteArray()
+
 fun main(args: Array<String>)
 {
+    println("Version B")
     val tf = TerminalFactory.getDefault()
 
     try {
@@ -80,12 +90,12 @@ fun main(args: Array<String>)
             i++
         }
 
-        val kbInput = Scanner(System.`in`)
+        /*val kbInput = Scanner(System.`in`)
         print("Enter a number: ")
         var index = kbInput.nextInt()
-        index--
+        index-- */
 
-        val terminal = terminals[index] ?: return
+        val terminal = terminals[/* index */ 0] ?: return
 
         if (!terminal.isCardPresent) {
             println("No Card detected")
@@ -108,7 +118,7 @@ fun main(args: Array<String>)
             GET_RESPONSE = GET_RESPONSE0
         }
 
-        var commands = mutableListOf<ByteArray>(
+        /*var commands = mutableListOf<ByteArray>(
             CMD_CID,
             CMD_ENFULLNAME,
             CMD_THFULLNAME,
@@ -122,7 +132,15 @@ fun main(args: Array<String>)
 
         commands.forEach {
             testCommand(it)
-        }
+        }*/
+
+
+        testCardId()
+        testDatApplet()
+        testExtApplet()
+        testBioApplet()
+
+        testReadPhoto()
 
         card.disconnect(true)
 
@@ -131,9 +149,62 @@ fun main(args: Array<String>)
     }
 }
 
+fun testReadPhoto() {
+    testSelectApplet(AID_THAI_APPLET_DAT)
+
+    var commands = mutableListOf<ByteArray>(
+        CMD_PHOTO1,
+        CMD_PHOTO2,
+        CMD_PHOTO3,
+        CMD_PHOTO4,
+        CMD_PHOTO5,
+        CMD_PHOTO6,
+        CMD_PHOTO7,
+        CMD_PHOTO8,
+        CMD_PHOTO9,
+        CMD_PHOTO10,
+        CMD_PHOTO11,
+        CMD_PHOTO12,
+        CMD_PHOTO13,
+        CMD_PHOTO14,
+        CMD_PHOTO15,
+        CMD_PHOTO16,
+        CMD_PHOTO17,
+        CMD_PHOTO18,
+        CMD_PHOTO19,
+        CMD_PHOTO20
+    )
+
+    commands.forEach {
+        sendAPDU(it)
+    }
+}
+
+fun testCardId() {
+    testSelectApplet(AID_THAI_APPLET_DAT)
+    sendAPDU(CMD_CARDID)
+}
+
+fun testDatApplet() {
+    testSelectApplet(AID_THAI_APPLET_DAT)
+    sendAPDU(CMD_BLOCK1_1)
+    sendAPDU(CMD_BLOCK1_2)
+    sendAPDU(CMD_BLOCK2)
+}
+
+fun testExtApplet() {
+    testSelectApplet(AID_THAI_APPLET_EXT)
+    sendAPDU(CMD_CARDADM)
+}
+
+fun testBioApplet() {
+    testSelectApplet(AID_THAI_APPLET_BIO)
+    sendAPDU(CMD_FPRINTP)
+}
+
 fun testCommand(cmd: ByteArray) {
     testSelectApplet(AID_THAI_APPLET_DAT)
-    testReadThaiCardContent(cmd)
+    sendAPDU(cmd)
 }
 
 fun testReadThaiCardContent(cmd: ByteArray) {
@@ -175,4 +246,18 @@ fun testJavaCardApplet() {
 
     println("data: ${data.toHexString()}")
     println("buf: ${buf.toHexString()}")
+}
+
+fun sendAPDU(cmd : ByteArray): ByteArray? {
+    try {
+        println("cmd: ${cmd.toHexString()}")
+        val resp1 = channel.transmit(CommandAPDU(cmd))
+        println("resp1: ${resp1.bytes.toHexString()}")
+        println("------------------oOo-------------------")
+        return resp1.bytes
+    } catch (e: Exception) {
+        println("Exception: ${e.message}")
+    }
+
+    return null
 }
