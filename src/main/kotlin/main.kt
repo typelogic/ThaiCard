@@ -20,7 +20,9 @@ lateinit var channel: CardChannel
 lateinit var GET_RESPONSE: ByteArray
 
 val AID_TEST_APPLET = "07 DEC0DE00000101".toByteArray() // my Java Card test applet
-val AID_THAI_APPLET = "08 A000000054480001".toByteArray()
+val AID_THAI_APPLET_DAT = "08 A0 000000 54480001".toByteArray() // storage data
+val AID_THAI_APPLET_EXT = "08 A0 000000 84060002".toByteArray() // extension
+val AID_THAI_APPLET_BIO = "08 A0 000000 84060000".toByteArray() // bio
 
 val CMD_SELECT      = "00A40400".toByteArray()
 
@@ -130,7 +132,7 @@ fun main(args: Array<String>)
 }
 
 fun testCommand(cmd: ByteArray) {
-    testSelectApplet(AID_THAI_APPLET)
+    testSelectApplet(AID_THAI_APPLET_DAT)
     testReadThaiCardContent(cmd)
 }
 
